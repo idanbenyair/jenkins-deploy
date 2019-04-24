@@ -1,0 +1,52 @@
+---
+# tasks file for jenkins-deploy
+
+- hosts: "{{ hosts_group }}"
+  remote_user: "{{ remote_user }}"
+  sudo: yes
+  handlers:
+    - name: start jenkins
+      service: name=jenkins state=started
+#    - name: enable jenkins
+#      service: name=jenkins enabled=yes
+  vars:
+    service_name: jenkins
+  tasks:
+    
+# Install java and other dependencies
+    - name: Install dependencies
+      yum:
+        name: "{{ packages }}"
+      vars:
+        packages:
+          - java-1.8.0-openjdk-devel
+
+#Getting repo
+    - name: Get Jenkins repo
+      shell: "curl --silent --location http://pkg.jenkins-ci.org/redhat-stable/jenkins.repo | sudo tee /etc/yum.repos.d/jenkins.repo"
+    
+# Adding repo
+    - name: Add Jenkins repo to repo system
+      shell: "sudo rpm --import https://jenkins-ci.org/redhat/jenkins-ci.org.key"
+
+# Install Jenkins
+    - name: Install Jenkins
+      yum:
+        name: "{{ packages }}"
+      vars:
+        packages:
+          - jenkins
+      notify:
+        - start jenkins
+   
+# Enable jenkins
+    - name: Enable Jenkins service
+      shell: "sudo systemctl enable {{ service_name }}"
+
+# Adjust firewall
+    - name: Implement firewall rule
+      shell: "sudo firewall-cmd --permanent --zone=public --add-port=8080/tcp"
+
+# Adjust firewall
+    - name: Implement firewall
+      shell: "sudo firewall-cmd --reload"
